@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>File Analysis Tool</title>
+    <style>
+        /* --- Complete CSS Styles --- */
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: #f4f4f9;
+            display: flex;
+            justify-content: center;
+            padding-top: 2rem;
+            margin: 0;
+            color: #333;
+        }
+        .container {
+            background: white;
+            padding: 2rem;
+            border-radius: 8px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            width: 90%;
+            max-width: 800px;
+        }
+        h1 {
+            text-align: center;
+            color: #0056b3;
+            margin-top: 0;
+        }
+        .form-group {
+            margin-bottom: 1.5rem;
+            padding: 1rem;
+            border: 1px solid #e9ecef;
+            border-radius: 6px;
+        }
+        label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: bold;
+        }
+        input[type="file"], select {
+            width: 100%;
+            padding: 8px;
+            border-radius: 4px;
+            border: 1px solid #ccc;
+            box-sizing: border-box; /* Ensures padding doesn't affect width */
+        }
+        input[type="radio"], input[type="checkbox"] {
+            margin-right: 0.5rem;
+        }
+        label.inline-label {
+            display: inline-block;
+            font-weight: normal;
+            margin-right: 1.5rem;
+        }
+        button {
+            width: 100%;
+            padding: 12px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        #status {
+            text-align: center;
+            margin-top: 1rem;
+            font-weight: bold;
+            color: #555;
+            min-height: 1.2em; /* Prevents layout shift */
+        }
+        #results-container {
+            margin-top: 2rem;
+            border-top: 2px solid #eee;
+            padding-top: 1rem;
+        }
+        #results-container pre {
+            background: #2d2d2d;
+            color: #f1f1f1;
+            padding: 1rem;
+            border-radius: 4px;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            font-family: 'Courier New', Courier, monospace;
+        }
+        #html-results {
+            width: 100%;
+            height: 600px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>File Analysis Tool</h1>
+        <form id="analysis-form">
+            <div class="form-group">
+                <label>Comparison Mode</label>
+                <input type="radio" id="two-file-mode" name="mode" value="two" checked> <label for="two-file-mode" class="inline-label">Two Separate Files (Daily)</label>
+                <input type="radio" id="single-file-mode" name="mode" value="singleDaily"> <label for="single-file-mode" class="inline-label">Single File (Compare 2 Days)</label>
+                <input type="radio" id="weekly-mode" name="mode" value="singleWeekly"> <label for="weekly-mode" class="inline-label">Single File (Compare 2 Full Weeks)</label>
+            </div>
+            
+            <div class="form-group" id="file-inputs">
+                <label for="file1" id="file1-label">File 1</label>
+                <input type="file" id="file1" name="file1" required>
+                <div id="file2-wrapper">
+                    <label for="file2" style="margin-top: 1rem;">File 2</label>
+                    <input type="file" id="file2" name="file2" required>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>Report Flow Type</label>
+                <input type="radio" id="flowA" name="flowType" value="A" checked> <label for="flowA" class="inline-label">Yieldlab Report (Flow A)</label>
+                <input type="radio" id="flowB" name="flowType" value="B"> <label for="flowB" class="inline-label">Type B Report (Flow B)</label>
+            </div>
+
+            <div class="form-group">
+                <input type="checkbox" id="concise" name="concise">
+                <label for="concise" class="inline-label">Generate Concise Text Output (for messaging)</label>
+            </div>
+
+            <button type="submit">Analyze</button>
+        </form>
+        <div id="status"></div>
+        <div id="results-container"></div>
+    </div>
+
+    <script>
+        // --- Complete and Corrected JavaScript Logic ---
+        const form = document.getElementById('analysis-form');
+        const statusDiv = document.getElementById('status');
+        const resultsContainer = document.getElementById('results-container');
+        
+        const file1Label = document.getElementById('file1-label');
+        const file2Wrapper = document.getElementById('file2-wrapper');
+        const file2Input = document.getElementById('file2');
+
+        document.querySelectorAll('input[name="mode"]').forEach(radio => {
+            radio.addEventListener('change', (e) => {
+                const mode = e.target.value;
+                if (mode === 'two') {
+                    file1Label.textContent = 'File 1';
+                    file2Wrapper.style.display = 'block';
+                    file2Input.required = true;
+                } else { // For both singleDaily and singleWeekly
+                    file1Label.textContent = 'Single File';
+                    file2Wrapper.style.display = 'none';
+                    file2Input.required = false;
+                }
+            });
+        });
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            statusDiv.textContent = 'Processing... Please wait.';
+            resultsContainer.innerHTML = '';
+
+            const formData = new FormData();
+            const selectedMode = document.querySelector('input[name="mode"]:checked').value;
+            
+            formData.append('isSingleFileMode', selectedMode !== 'two');
+            formData.append('isWeeklyMode', selectedMode === 'singleWeekly');
+            formData.append('isConciseMode', document.getElementById('concise').checked);
+            formData.append('flowType', document.querySelector('input[name="flowType"]:checked').value);
+            formData.append('file1', document.getElementById('file1').files[0]);
+            
+            if (selectedMode === 'two') {
+                formData.append('file2', document.getElementById('file2').files[0]);
+            }
+
+            try {
+                // Using the correct port 3300
+                const response = await fetch('http://localhost:3300/analyze', {
+                    method: 'POST',
+                    body: formData,
+                });
+
+                const result = await response.text();
+
+                if (!response.ok) {
+                    let errorMsg = result;
+                    try {
+                        const jsonError = JSON.parse(result);
+                        errorMsg = jsonError.error || result;
+                    } catch (parseError) { /* Not JSON, just show text */ }
+                    throw new Error(`Server error: ${errorMsg}`);
+                }
+
+                statusDiv.textContent = 'Analysis Complete!';
+
+                if (document.getElementById('concise').checked) {
+                    resultsContainer.innerHTML = `<pre>${result}</pre>`;
+                } else {
+                    const iframe = document.createElement('iframe');
+                    iframe.id = 'html-results';
+                    iframe.srcdoc = result;
+                    resultsContainer.appendChild(iframe);
+                }
+
+            } catch (error) {
+                // --- THIS BLOCK WAS MISSING A CLOSING BRACE ---
+                statusDiv.textContent = `Error: ${error.message}`;
+            } // <-- THE FIX IS HERE
+        });
+    </script>
+</body>
+</html>
